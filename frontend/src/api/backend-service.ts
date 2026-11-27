@@ -37,6 +37,16 @@ export async function runAction(
   return await response.json()
 }
 
+export async function retryDispatch(
+  key: string,
+  id: number,
+): Promise<ActionResult> {
+  const response = await request(`/api/${key}/${id}/dispatch/retry`, {
+    method: 'POST',
+  })
+  return await response.json()
+}
+
 export async function downloadEntries(
   key: string,
   filters: Record<string, string> = {},

@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.services.base import BaseModuleService
+from app.services.relay import guard_target_action
 from app.store import store
 
 
@@ -22,6 +23,11 @@ class ReviewMeetingService(BaseModuleService):
         entry = self.get_entry(entry_id)
         if entry is None:
             return None, f"{self.ENTITY} {entry_id} 不存在或已归档"
+
+        # 接力派发的纪要必须完整受理后才能办理；示例数据沿用原规则。
+        blocked = guard_target_action(self.MODULE, entry, self.ENTITY, action)
+        if blocked:
+            return None, blocked
 
         # 签认纪要先通过待签认状态
         if action == "签认纪要":

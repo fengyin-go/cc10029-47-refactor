@@ -48,7 +48,24 @@
       <tbody>
         <tr v-for="row in rows" :key="String(row.id)" :data-testid="`row-${row.id}`" :data-status="String(row.status)">
           <td v-for="column in meta.fields" :key="column">{{ row[column] ?? '—' }}</td>
-          <td>{{ row.status }}</td>
+          <td>
+            {{ row.status }}
+            <span v-if="row.relay_source" class="relay-tag" data-testid="relay-source">
+              来源 {{ row.relay_source }}{{ row.relay_complete ? '' : '（未完整受理）' }}
+            </span>
+            <span v-if="row.dispatch_state" class="relay-tag" data-testid="dispatch-state">
+              派发：{{ row.dispatch_state }}
+            </span>
+            <button
+              v-if="row.dispatch_retryable"
+              class="link"
+              type="button"
+              data-testid="dispatch-retry"
+              @click="retry(row)"
+            >
+              重试派发
+            </button>
+          </td>
           <td class="row-actions">
             <button
               v-for="action in meta.actions"
@@ -101,6 +118,7 @@ import {
   downloadEntries,
   listEntries,
   moduleMeta,
+  retryDispatch,
   runAction as applyAction,
 } from '@/api/backend-service'
 import type { EntryRow } from '@/data/types'
@@ -173,6 +191,17 @@ async function runAction(action: string, row: EntryRow) {
     await reload()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '操作失败'
+  }
+}
+
+async function retry(row: EntryRow) {
+  errorMessage.value = ''
+  try {
+    const result = await retryDispatch(meta.key, Number(row.id))
+    if (!result.ok) throw new Error(result.message)
+    await reload()
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '续办失败'
   }
 }
 
